@@ -54,16 +54,16 @@
 static volatile uint8_t buffer[BUFFER_SIZE];
 static volatile uint8_t head, tail;
 static uint8_t DataPin;
-static uint8_t CharBuffer=0;
-static uint8_t UTF8next=0;
+static uint8_t CharBuffer = 0;
+static uint8_t UTF8next = 0;
 static const PS2Keymap_t *keymap=NULL;
 
 // The ISR for the external interrupt
 void ps2interrupt(void)
 {
-	static uint8_t bitcount=0;
-	static uint8_t incoming=0;
-	static uint32_t prev_ms=0;
+	static uint8_t bitcount = 0;
+	static uint8_t incoming = 0;
+	static uint32_t prev_ms = 0;
 	uint32_t now_ms;
 	uint8_t n, val;
 
@@ -91,8 +91,8 @@ void ps2interrupt(void)
 	}
 }
 
-static inline uint8_t get_scan_code(void)
-{
+static inline uint8_t get_scan_code(void) {
+
 	uint8_t c, i;
 
 	i = tail;
@@ -101,6 +101,7 @@ static inline uint8_t get_scan_code(void)
 	if (i >= BUFFER_SIZE) i = 0;
 	c = buffer[i];
 	tail = i;
+    Serial.println((int)c);
 	return c;
 }
 
@@ -277,9 +278,18 @@ const PROGMEM PS2Keymap_t PS2Keymap_French = {
 #define SHIFT_R   0x08
 #define ALTGR     0x10
 
-static char get_iso8859_code(void)
-{
-	static uint8_t state=0;
+#define ALT       0x11
+#define CTRL      0x14
+#define GUI       0x1f
+
+static int alt_held = 0;
+static int ctrl_held = 0;
+static int gui_held = 0;
+
+static char get_iso8859_code(void) {
+    
+	static uint8_t state = 0;
+
 	uint8_t s;
 	char c;
 
@@ -290,7 +300,18 @@ static char get_iso8859_code(void)
 			state |= BREAK;
 		} else if (s == 0xE0) {
 			state |= MODIFIER;
-		} else {
+		} else if (s == ALT && alt_held == 0) {
+            alt_held = 1;
+            Serial.println("pressed alt");
+        } else if (s == CTRL && ctrl_held == 0) {
+            ctrl_held = 1;
+            Serial.println("pressed control");
+        } else if (s == GUI && gui_held == 0) {
+            gui_held = 1;
+            Serial.println("pressed GUI");
+        } 
+        else {            
+
 			if (state & BREAK) {
 				if (s == 0x12) {
 					state &= ~SHIFT_L;
@@ -298,9 +319,19 @@ static char get_iso8859_code(void)
 					state &= ~SHIFT_R;
 				} else if (s == 0x11 && (state & MODIFIER)) {
 					state &= ~ALTGR;
-				}
+				} else if (s == ALT) {
+                    alt_held = 0;
+                    Serial.println("released alt");
+                } else if (s == CTRL) {
+                    ctrl_held = 0;
+                    Serial.println("released control");
+                } else if (s == GUI) {
+                    gui_held = 0;
+                    Serial.println("released GUI");
+                } 
 				// CTRL, ALT & WIN keys could be added
 				// but is that really worth the overhead?
+
 				state &= ~(BREAK | MODIFIER);
 				continue;
 			}
@@ -316,36 +347,73 @@ static char get_iso8859_code(void)
 			c = 0;
 			if (state & MODIFIER) {
 				switch (s) {
-				  case 0x70: c = PS2_INSERT;      break;
-				  case 0x6C: c = PS2_HOME;        break;
-				  case 0x7D: c = PS2_PAGEUP;      break;
-				  case 0x71: c = PS2_DELETE;      break;
-				  case 0x69: c = PS2_END;         break;
-				  case 0x7A: c = PS2_PAGEDOWN;    break;
-				  case 0x75: c = PS2_UPARROW;     break;
-				  case 0x6B: c = PS2_LEFTARROW;   break;
-				  case 0x72: c = PS2_DOWNARROW;   break;
-				  case 0x74: c = PS2_RIGHTARROW;  break;
-				  case 0x4A: c = '/';             break;
-				  case 0x5A: c = PS2_ENTER;       break;
-				  default: break;
+        			case 0x70: c = PS2_INSERT;      break;
+        			case 0x6C: c = PS2_HOME;        break;
+        			case 0x7D: c = PS2_PAGEUP;      break;
+        			case 0x71: c = PS2_DELETE;      break;
+        			case 0x69: c = PS2_END;         break;
+        			case 0x7A: c = PS2_PAGEDOWN;    break;
+        			case 0x75: c = PS2_UPARROW;     break;
+        			case 0x6B: c = PS2_LEFTARROW;   break;
+        			case 0x72: c = PS2_DOWNARROW;   break;
+        			case 0x74: c = PS2_RIGHTARROW;  break;
+        			case 0x4A: c = '/';             break;
+        			case 0x5A: c = PS2_ENTER;       break;
+        			default: break;
 				}
 			} else if ((state & ALTGR) && keymap->uses_altgr) {
+                Serial.println("using alt");
 				if (s < PS2_KEYMAP_SIZE)
 					c = pgm_read_byte(keymap->altgr + s);
 			} else if (state & (SHIFT_L | SHIFT_R)) {
+                Serial.println("using shift");
 				if (s < PS2_KEYMAP_SIZE)
 					c = pgm_read_byte(keymap->shift + s);
 			} else {
+                Serial.println("using no shift");
 				if (s < PS2_KEYMAP_SIZE)
 					c = pgm_read_byte(keymap->noshift + s);
 			}
 			state &= ~(BREAK | MODIFIER);
+            Serial.print("Returning key: ");
+            Serial.println((int)s);
+            if(s == 0x58) {
+                // Caps lock.
+                c = PS2_CAPSLOCK;
+            } 
+            // Num lock, scroll lock etc..
+            Serial.println(c);
+
 			if (c) return c;
 		}
 	}
 }
 
+/**
+ * Boolean, returns 1  if ctrl is depressed, 0 otherwise.
+ */
+int PS2Keyboard::ctrlPressed() {
+    return ctrl_held;
+}
+
+/**
+ * Boolean, returns 1  if alt is depressed, 0 otherwise.
+ */
+int PS2Keyboard::altPressed() {
+    return alt_held;
+}
+
+int PS2Keyboard::guiPressed() {
+    return gui_held;
+}
+
+int PS2Keyboard::getCharBuffer() {
+    return CharBuffer;
+}
+
+/* 
+ * 
+ */
 bool PS2Keyboard::available() {
 	if (CharBuffer || UTF8next) return true;
 	CharBuffer = get_iso8859_code();

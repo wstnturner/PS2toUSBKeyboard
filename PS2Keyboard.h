@@ -37,33 +37,36 @@
 // Every call to read() returns a single byte for each
 // keystroke.  These configure what byte will be returned
 // for each "special" key.  To ignore a key, use zero.
-#define PS2_TAB				9
-#define PS2_ENTER			13
-#define PS2_BACKSPACE			127
-#define PS2_ESC				27
-#define PS2_INSERT			0
-#define PS2_DELETE			127
-#define PS2_HOME			0
-#define PS2_END				0
-#define PS2_PAGEUP			25
-#define PS2_PAGEDOWN			26
-#define PS2_UPARROW			11
-#define PS2_LEFTARROW			8
-#define PS2_DOWNARROW			10
-#define PS2_RIGHTARROW			21
-#define PS2_F1				0
-#define PS2_F2				0
-#define PS2_F3				0
-#define PS2_F4				0
-#define PS2_F5				0
-#define PS2_F6				0
-#define PS2_F7				0
-#define PS2_F8				0
-#define PS2_F9				0
-#define PS2_F10				0
-#define PS2_F11				0
-#define PS2_F12				0
-#define PS2_SCROLL			0
+#define PS2_TAB				 1
+#define PS2_ENTER			 2
+#define PS2_BACKSPACE	 3
+#define PS2_ESC				 4
+#define PS2_INSERT		 5
+#define PS2_DELETE		 6
+#define PS2_HOME			 7
+#define PS2_END				 8
+#define PS2_PAGEUP		 9
+#define PS2_PAGEDOWN	 10
+#define PS2_UPARROW		 11
+#define PS2_LEFTARROW	 12
+#define PS2_DOWNARROW	 13
+#define PS2_RIGHTARROW 15
+#define PS2_F1				 16
+#define PS2_F2				 17
+#define PS2_F3				 18
+#define PS2_F4				 19
+#define PS2_F5				 20
+#define PS2_F6				 21
+#define PS2_F7				 22
+#define PS2_F8				 23
+#define PS2_F9				 24
+#define PS2_F10				 25
+#define PS2_F11				 26
+#define PS2_F12				 27
+#define PS2_SCROLL		 28
+#define PS2_CAPSLOCK   29
+#define PS2_NUMLOCK    30
+#define PS2_LEFTGUI    31
 
 #define PS2_INVERTED_EXCLAMATION	161 // ¡
 #define PS2_CENT_SIGN			162 // ¢
@@ -182,30 +185,46 @@ extern const PROGMEM PS2Keymap_t PS2Keymap_French;
  * Author:  Christian Weichel
  */
 class PS2Keyboard {
-  public:
-  	/**
-  	 * This constructor does basically nothing. Please call the begin(int,int)
-  	 * method before using any other method of this class.
-  	 */
+public:
+    /**
+     * This constructor does basically nothing. Please call the begin(int,int)
+     * method before using any other method of this class.
+     */
     PS2Keyboard();
-    
+
     /**
      * Starts the keyboard "service" by registering the external interrupt.
      * setting the pin modes correctly and driving those needed to high.
      * The propably best place to call this method is in the setup routine.
      */
     static void begin(uint8_t dataPin, uint8_t irq_pin, const PS2Keymap_t &map = PS2Keymap_US);
-    
+
     /**
      * Returns true if there is a char to be read, false if not.
      */
     static bool available();
-    
+
     /**
      * Returns the char last read from the keyboard.
      * If there is no char availble, -1 is returned.
      */
     static int read();
+
+    /**
+     * Boolean, returns 1  if ctrl is depressed, 0 otherwise.
+     */
+    static int ctrlPressed();
+
+    /**
+     * Boolean, returns 1  if alt is depressed, 0 otherwise.
+     */
+    static int altPressed();
+
+    static int guiPressed();
+
+    static int getCharBuffer();
+private:
 };
+
 
 #endif
