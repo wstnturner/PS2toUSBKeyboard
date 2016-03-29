@@ -39,28 +39,55 @@ void setup() {
     Serial.println("Keyboard Test:");
 }
 
+bool altState = 0;
+bool ctrlState = 0;
+bool guiState = 0;
+bool shiftState = 0;
+
+
 void loop() {
+
+    if (keyboard.altPressed() && altState == 0) {
+        Serial.print("[ALT]");
+        Keyboard.press(KEY_LEFT_ALT);
+        altState = 1;
+    } else if (!keyboard.altPressed() && altState == 1) {
+        Keyboard.release(KEY_LEFT_ALT);
+        altState = 0;
+    } 
+    if (keyboard.ctrlPressed() && ctrlState == 0) {
+        Serial.print("[CTRL]");
+        Keyboard.press(KEY_LEFT_CTRL);
+        ctrlState = 1;
+    } else if (!keyboard.ctrlPressed() && ctrlState == 1) {
+        Keyboard.release(KEY_LEFT_CTRL);
+        ctrlState = 0;
+    } 
+    if (keyboard.guiPressed() && guiState == 0) {
+        Serial.print("[GUI]");
+        Keyboard.press(KEY_LEFT_GUI);
+        guiState = 1;
+    } else if (!keyboard.guiPressed() && guiState == 1) {
+        Keyboard.release(KEY_LEFT_GUI);
+        guiState = 0;
+    } 
+    if (keyboard.shiftPressed() && shiftState == 0) {
+        Serial.print("[SHIFT]");
+        Keyboard.press(KEY_LEFT_SHIFT);
+        shiftState = 1;
+    } else if (!keyboard.shiftPressed() && shiftState == 1) {
+        Keyboard.release(KEY_LEFT_SHIFT);
+        shiftState = 0;
+    } 
+
     if (keyboard.available()) {
 
         // read the next key
         char c = keyboard.read();
-
         
         if(c == PS2_TAB) {
-            if (keyboard.altPressed()) {
-                Serial.print("[ALT][Tab]");
-                Keyboard.press(KEY_LEFT_ALT);
-                Keyboard.write(KEY_TAB);
-                Keyboard.release(KEY_LEFT_ALT);
-            } else if (keyboard.guiPressed()) {
-                Serial.print("[GUI][Tab]");
-                Keyboard.press(KEY_LEFT_GUI);
-                Keyboard.write(KEY_TAB);
-                Keyboard.release(KEY_LEFT_GUI);
-            } else {
-                Serial.print("[Tab]");
-                Keyboard.write(KEY_TAB);
-            }
+            Serial.println("[Tab]");
+            Keyboard.write(KEY_TAB);
         } else if(c == PS2_ENTER) {
             Serial.println("[RETURN]");
             Keyboard.write(KEY_RETURN);
@@ -144,22 +171,10 @@ void loop() {
             // Unimplemented in HID??
         }
         else {
-            // otherwise, just print all normal characters
+            // Otherwise, just print all normal characters.
             Serial.print("Key: ");
             Serial.println(c);
-
-            if (keyboard.altPressed()) {
-                Keyboard.press(KEY_LEFT_ALT);
-                Keyboard.write(c);
-                Keyboard.release(KEY_LEFT_ALT);
-            } else if(keyboard.ctrlPressed()) {
-                Keyboard.press(KEY_LEFT_CTRL);
-                Keyboard.write(c);
-                Keyboard.release(KEY_LEFT_CTRL);
-            } else {
-                Keyboard.write(c);
-            }
-            
+            Keyboard.write(c);
         }
     }
 }

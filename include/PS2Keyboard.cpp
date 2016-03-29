@@ -285,6 +285,7 @@ const PROGMEM PS2Keymap_t PS2Keymap_French = {
 static int alt_held = 0;
 static int ctrl_held = 0;
 static int gui_held = 0;
+static int shift_held = 0;
 
 static char get_iso8859_code(void) {
     
@@ -315,8 +316,10 @@ static char get_iso8859_code(void) {
             if (state & BREAK) {
                 if (s == 0x12) {
                     state &= ~SHIFT_L;
+                    shift_held = 0;
                 } else if (s == 0x59) {
                     state &= ~SHIFT_R;
+                    shift_held = 0;
                 } else if (s == 0x11 && (state & MODIFIER)) {
                     state &= ~ALTGR;
                 } else if (s == ALT) {
@@ -329,17 +332,17 @@ static char get_iso8859_code(void) {
                     gui_held = 0;
                     Serial.println("released GUI");
                 } 
-                // CTRL, ALT & WIN keys could be added
-                // but is that really worth the overhead?
 
                 state &= ~(BREAK | MODIFIER);
                 continue;
             }
             if (s == 0x12) {
                 state |= SHIFT_L;
+                shift_held = 1;
                 continue;
             } else if (s == 0x59) {
                 state |= SHIFT_R;
+                shift_held = 1;
                 continue;
             } else if (s == 0x11 && (state & MODIFIER)) {
                 state |= ALTGR;
@@ -405,6 +408,10 @@ int PS2Keyboard::altPressed() {
 
 int PS2Keyboard::guiPressed() {
     return gui_held;
+}
+
+int PS2Keyboard::shiftPressed() {
+    return shift_held;
 }
 
 int PS2Keyboard::getCharBuffer() {
